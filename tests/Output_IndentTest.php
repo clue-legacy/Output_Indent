@@ -6,7 +6,7 @@ require_once 'Output/Indent.php';
 
 class Output_IndentTest extends PHPUnit_Framework_TestCase {
     
-    public function testOne(){
+    public function testTree(){
         echo 'root-a';
         echo NL.'root-b';
         $indent = new Output_Indent("\t");
@@ -29,5 +29,79 @@ class Output_IndentTest extends PHPUnit_Framework_TestCase {
         echo NL.'end';
         
         //$this->assertEquals('',$output);
+    }
+    
+    public function testLines(){
+        ob_start();
+        
+        $indent = new Output_Indent(0);
+        $indent->line('1');
+        $indent->line('2');
+        $indent->line('3');
+        unset($indent);
+        
+        $content = ob_get_flush();
+        $this->assertEquals("1\r\n2\r\n3",$content); 
+        
+    }
+    
+    public function testClear(){
+        ob_start();
+        
+        $indent = new Output_Indent('#');
+        for($i=0;$i<5;++$i){
+            $indent = $indent->clear();
+        }
+        $indent->line('test');
+        unset($indent);
+        
+        $content = ob_get_flush();
+        $this->assertEquals("\r\n#test",$content); 
+    }
+    
+    public function testFlush(){
+        ob_start();
+        
+        $indent = new Output_Indent('flush');
+        echo 'in';
+        for($i=0;$i<5;++$i){
+            $indent = $indent->flush();
+        }
+        echo 'g';
+        unset($indent);
+        
+        $content = ob_get_flush();
+        $this->assertEquals("\r\nflushing",$content); 
+    }
+    
+    public function testMixed(){
+        ob_start();
+        
+        echo 'a';
+        $indent = new Output_Indent(2);
+        echo '1';
+        $indent->line('2');
+        echo '3';
+        
+        unset($indent);
+        echo 'b';
+        
+        $content = ob_get_flush();
+        $this->assertEquals("a\r\n  1\r\n  2\r\n  3b",$content); 
+    }
+    
+    public function testDeep(){
+        ob_start();
+        
+        $indent = new Output_Indent('.');
+        $indent2 = $indent->deeper();
+        $indent3 = $indent->deeper();
+        echo 'dots';
+        unset($indent3);
+        unset($indent2);
+        unset($indent);
+        
+        $content = ob_get_flush();
+        $this->assertEquals("\r\n...dots",$content); 
     }
 }
