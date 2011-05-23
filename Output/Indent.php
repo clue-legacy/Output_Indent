@@ -32,6 +32,11 @@ class Output_Indent{
                 $state |= Output_Indent::STATE_NEWL;
             }*/
             
+            if(!($state & Output_Indent::STATE_STARTED) && substr($chunk,0,2) === "\r\n"){ // ignroe initial newline
+                $chunk = (string)substr($chunk,2);
+                $state |= Output_Indent::STATE_STARTED;
+            }
+            
             //$chunk = '['.$mode.':'.$chunk.']';
             
             if($state & Output_Indent::STATE_NEWL){
@@ -50,6 +55,12 @@ class Output_Indent{
             if($mode & PHP_OUTPUT_HANDLER_END){
                 //$chunk .= '['.var_export($chunks,true).']';
             }
+            
+            if($chunk !== ''){
+                $state |= Output_Indent::STATE_STARTED;
+            }
+            
+            //$chunk = '<<'.$state.':'.$chunk.'>>';
             
             return $chunk;
         };
@@ -104,7 +115,17 @@ class Output_Indent{
      */
     public function isClear(){
         ob_flush(); // clear remaining output buffer (probably empty or just a single character)
-        return !!($this->state & self::STATE_NEWL);
+        return !!($this->state & self::STATE_NEWL && $this->state & self::STATE_STARTED);
+    }
+    
+    /**
+     * check whether this output buffer did output anything at all
+     * 
+     * @return boolean
+     */
+    public function isEmpty(){
+        ob_flush();
+        return !($this->state & self::STATE_STARTED);
     }
     
     public function __destruct(){
