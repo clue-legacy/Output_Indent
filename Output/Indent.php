@@ -2,12 +2,9 @@
 
 class Output_Indent{
     
-    const STATE_IS_CLEAR = 2;
-    
     const STATE_STARTED = 1;
     
     const STATE_NEWL = 4;
-    
     
     /**
      * indentation string
@@ -16,9 +13,7 @@ class Output_Indent{
      */
     private $indent;
     
-    private $state = 0;
-    
-    private $ignoreEnd = 0;
+    private $state;
     
     public function __construct($indent=2){
         if(is_int($indent)){
@@ -27,50 +22,33 @@ class Output_Indent{
         
         $this->indent = $indent;
         
-        $state = $this->state;
-        $ignoreEnd =& $this->ignoreEnd;
-        $fn = function($chunk,$mode) use ($indent,&$state,&$ignoreEnd){
-            //$chunk = '['.$mode.':'.$chunk.']';
+        $state = $this->state = self::STATE_NEWL;
+        
+        $chunks = array();
+        $fn = function($chunk,$mode) use ($indent,&$state,&$chunks){
+            //$chunks[] = $chunk;
             
-            if($mode & PHP_OUTPUT_HANDLER_START){
-                if(substr($chunk,0,2) !== "\r\n"){
-                    $chunk = "\r\n".$chunk;
-                }
-                $state |= Output_Indent::STATE_STARTED;
-            }
+            /*if($mode & PHP_OUTPUT_HANDLER_START){
+                $state |= Output_Indent::STATE_NEWL;
+            }*/
+            
+            //$chunk = '['.$mode.':'.$chunk.']';
             
             if($state & Output_Indent::STATE_NEWL){
                 $chunk = "\r\n".$chunk;
                 $state &= ~Output_Indent::STATE_NEWL;
             }
             if(substr($chunk,-2) === "\r\n"){ // ends with newline
-                $chunk = substr($chunk,0,-2); // remove and remember for next output
+                $chunk = (string)substr($chunk,0,-2); // remove and remember for next output
                 $state |= Output_Indent::STATE_NEWL;
-            }
-            
-            
-            
-            if(substr($chunk,-2) === "\r\n"){
-                $state |= Output_Indent::STATE_IS_CLEAR;
             }else{
-                $state &= ~Output_Indent::STATE_IS_CLEAR;
+                $state &= ~Output_Indent::STATE_NEWL;
             }
-            if($ignoreEnd !== 0){
-                $chunk = substr($chunk,0,-$ignoreEnd);
-                /*if(substr($chunk,-strlen($ignoreEnd)) === $ignoreEnd){
-                    $chunk = substr($chunk,0,-strlen($ignoreEnd));
-                }*/
-                $ignoreEnd = NULL;
-            }
-            $chunk = str_replace(array("\r\n"/*,"\n","\r"*/),"\r\n".$indent,$chunk);
+            
+            $chunk = str_replace("\r\n","\r\n".$indent,$chunk);
             
             if($mode & PHP_OUTPUT_HANDLER_END){
-                /*if(substr($chunk,-2) === "\r\n"){
-                    $chunk = substr($chunk,0,-2);
-                }*/
-                if($state & Output_Indent::STATE_STARTED){
-                    //$chunk .= "\r\n";
-                }
+                //$chunk .= '['.var_export($chunks,true).']';
             }
             
             return $chunk;
@@ -93,10 +71,11 @@ class Output_Indent{
      * @uses Output_Indent::isClear()
      */
     public function line($text){
-        if(!$this->isClear()){
-            $text = "\r\n".$text;
+        if($this->isClear()){
+            echo $text."\r\n";
+        }else{
+            echo "\r\n".$text."\r\n";
         }
-        echo $text."\r\n";
         return $this;
     }
     
@@ -114,12 +93,7 @@ class Output_Indent{
     }
     
     public function flush(){
-        if($this->state & self::STATE_STARTED){
-            //$this->ignoreEnd = 7;
-            //echo "[FLUSH]";
-            flush();
-            ob_flush();
-        }
+        ob_flush();
         return $this;
     }
     
@@ -129,25 +103,8 @@ class Output_Indent{
      * @return boolean
      */
     public function isClear(){
+        ob_flush(); // clear remaining output buffer (probably empty or just a single character)
         return !!($this->state & self::STATE_NEWL);
-        
-        if($this->state & self::STATE_STARTED){
-            $this->flush();
-            return !!($this->state & self::STATE_CLEAR);
-            
-            return false;
-            
-            $old = $this->ignoreEnd;
-            $this->ignoreEnd = 2;
-            echo "\r\n";
-            
-            $ret = ($this->ignoreEnd === '');
-            
-            $this->ignoreEnd = $old;
-            
-            return $ret;
-        }
-        return false;
     }
     
     public function __destruct(){
