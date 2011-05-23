@@ -41,7 +41,7 @@ class Output_IndentTest extends PHPUnit_Framework_TestCase {
         unset($indent);
         
         $content = ob_get_flush();
-        $this->assertEquals("1\r\n2\r\n3",$content); 
+        $this->assertEquals("\r\n1\r\n2\r\n3",$content); 
         
     }
     
@@ -57,6 +57,17 @@ class Output_IndentTest extends PHPUnit_Framework_TestCase {
         
         $content = ob_get_flush();
         $this->assertEquals("\r\n#test",$content); 
+    }
+    
+    public function testIsClear(){
+        $indent = new Output_Indent('  ');
+        for($i=0;$i<5;++$i){
+            $this->assertFalse($indent->isClear());
+        }
+        $indent->line('line');
+        for($i=0;$i<5;++$i){
+            $this->assertTrue($indent->isClear());
+        }
     }
     
     public function testFlush(){
@@ -88,6 +99,31 @@ class Output_IndentTest extends PHPUnit_Framework_TestCase {
         
         $content = ob_get_flush();
         $this->assertEquals("a\r\n  1\r\n  2\r\n  3b",$content); 
+    }
+    
+    public function testEmpty(){
+        ob_start();
+        
+        echo "a";
+        new Output_Indent(8);
+        echo "\r\nb";
+        
+        $content = ob_get_flush();
+        $this->assertEquals("a\r\nb",$content); 
+    }
+    
+    public function testEmptyFlush(){
+        ob_start();
+        
+        echo "a";
+        $indent = new Output_Indent(8);
+        $indent->flush();
+        $indent->flush();
+        unset($indent);
+        echo "\r\nb";
+        
+        $content = ob_get_flush();
+        $this->assertEquals("a\r\nb",$content); 
     }
     
     public function testDeep(){
