@@ -1,0 +1,8 @@
+{
+    "name": "clue/Output-Indent",
+    "autoload": {
+        "psr-0": {
+            "Output": ""
+        }
+    }
+}
